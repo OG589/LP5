@@ -179,3 +179,14 @@ int main(int argc, char const *argv[])
     perform_p_merge_sort(array,SIZE);
     return 0;
 }
+
+
+
+
+
+
+####COMMANDS###
+g++ -fopenmp assignment2.cpp -o assignment2
+./assignment2
+
+    
