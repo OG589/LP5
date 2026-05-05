@@ -136,3 +136,86 @@ int main(){
 
     return 0;
 }
+
+
+
+
+
+
+###COMMANDS###
+
+✅ 1. Check if your system supports CUDA
+
+Run:
+
+nvidia-smi
+✔ If you see GPU info → good
+❌ If command not found → CUDA not installed / no NVIDIA GPU
+✅ 2. Install CUDA Toolkit (if not installed)
+sudo apt update
+sudo apt install nvidia-cuda-toolkit
+
+Check installation:
+
+nvcc --version
+✅ 3. Save your file
+nano matrix.cu
+
+Paste your code → Save
+
+✅ 4. Compile using nvcc (NOT g++)
+nvcc matrix.cu -o matrix
+✅ 5. Run the program
+./matrix
+⚠️ IMPORTANT BUGS in your code (fix these before running)
+
+Your code has 2 critical issues that can give wrong results:
+
+❌ 1. Grid dimension calculation is WRONG
+
+Your line:
+
+dim3 dimGrid(A_rows + BLOCK_SIZE  - 1 / BLOCK_SIZE, B_cols + BLOCK_SIZE - 1 / BLOCK_SIZE);
+
+👉 Problem: Operator precedence → division happens first
+
+✅ Fix:
+dim3 dimGrid((B_cols + BLOCK_SIZE - 1) / BLOCK_SIZE,
+             (C_rows + BLOCK_SIZE - 1) / BLOCK_SIZE);
+❌ 2. You are mixing Unified Memory + cudaMemcpy
+
+You used:
+
+cudaMallocManaged(...)
+
+👉 That means NO need for cudaMemcpy
+
+✅ Fix: Remove these lines
+cudaMemcpy(m1,A,...)
+cudaMemcpy(m2,B,...)
+cudaMemcpy(C,result,...)
+Instead:
+for(int i = 0; i < A_size; i++) m1[i] = A[i];
+for(int i = 0; i < B_size; i++) m2[i] = B[i];
+
+cudaDeviceSynchronize();  // after kernel
+
+for(int i = 0; i < C_size; i++) C[i] = result[i];
+❌ 3. Missing synchronization after kernel
+
+Add this after kernel launch:
+
+matrix_multiply<<<dimGrid,dimBlock>>>(...);
+cudaDeviceSynchronize();
+⚠️ 4. CPU timing mistake
+
+You're using CUDA events for CPU timing ❌
+
+👉 Instead use:
+
+auto start = chrono::high_resolution_clock::now();
+matrix_multiplication_cpu(...);
+auto end = chrono::high_resolution_clock::now();
+💡 Final Compile + Run
+nvcc matrix.cu -o matrix
+./matrix
