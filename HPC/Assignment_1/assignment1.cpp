@@ -172,3 +172,8 @@ int main(int argc, char const *argv[])
     return 0;
 }
 
+
+
+For compiling
+g++ -fopenmp graph.cpp -o graph
+./graph
