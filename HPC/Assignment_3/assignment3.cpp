@@ -110,3 +110,64 @@ int main(){
     average(array);
     return 0;
 }
+
+
+
+###COMMANDS###
+ g++ -fopenmp assignment3.cpp -o assignment3
+./assignment3
+
+
+     
+
+###IF not Working ###
+✅ Fix (VERY IMPORTANT)
+
+Convert all loops to index-based form:
+
+✔ Fixed version (example: minimum)
+#pragma omp parallel for reduction(min: min_ele)
+for(int i = 0; i < array.size(); i++){
+    if(array[i] < min_ele){
+        min_ele = array[i];
+    }
+}
+✔ Apply same fix everywhere
+
+Replace ALL loops like:
+
+for(auto i = array.begin(); i != array.end(); i++)
+
+with:
+
+for(int i = 0; i < array.size(); i++)
+⚠️ 2. Minor improvements (for better marks)
+✔ Avoid copying vector (performance issue)
+
+Currently:
+
+void minimum(vector<int> array)  // ❌ copy happens
+Fix:
+void minimum(const vector<int>& array)  // ✅ no copy
+
+Apply to all functions.
+
+✔ Use double for average (better precision)
+double avg = 0;
+✔ Optional: set number of threads
+omp_set_num_threads(4);
+
+or in terminal:
+
+export OMP_NUM_THREADS=4
+✅ 3. Compile & Run
+g++ -fopenmp reduction.cpp -o reduction
+./reduction
+📊 Expected Output
+Minimum Element: ...
+Time Taken: ...
+
+Minimum Element(Parallel Reduction): ...
+Time Taken: ...
+
+Same for max, sum, avg.
