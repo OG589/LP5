@@ -95,3 +95,102 @@ int main(){
 
     return 0;
 }
+
+
+
+
+##COMMANDS##
+
+✅ 1. How to run on Ubuntu
+🔹 Save file
+nano vector_add.cu
+🔹 Compile with CUDA compiler (nvcc)
+nvcc vector_add.cu -o vector_add
+🔹 Run
+./vector_add
+⚠️ 2. IMPORTANT BUGS (must fix)
+❌ Bug 1: Wrong grid size calculation
+
+Your line:
+
+dim3 dimGrid(size + BLOCK_SIZE - 1 / BLOCK_SIZE);
+
+👉 Due to precedence, 1 / BLOCK_SIZE = 0
+
+✅ Fix:
+dim3 dimGrid((size + BLOCK_SIZE - 1) / BLOCK_SIZE);
+❌ Bug 2: Mixing cudaMallocManaged + cudaMemcpy
+
+You used:
+
+cudaMallocManaged(...)
+cudaMemcpy(...)
+
+👉 This is redundant and wrong usage.
+
+✅ Fix (Option 1: Use Unified Memory properly)
+
+Remove all cudaMemcpy and do:
+
+for(int i = 0; i < size; i++){
+    arr1_gpu[i] = arr1_cpu[i];
+    arr2_gpu[i] = arr2_cpu[i];
+}
+
+After kernel:
+
+cudaDeviceSynchronize();
+❌ Bug 3: Missing synchronization after kernel
+
+Add:
+
+add<<<dimGrid,dimBlock>>>(...);
+cudaDeviceSynchronize();
+❌ Bug 4: CPU timing is wrong
+
+You are using CUDA events for CPU ❌
+
+✅ Fix:
+auto start_cpu = chrono::high_resolution_clock::now();
+add_cpu(arr1_cpu,arr2_cpu,result_cpu,size);
+auto end_cpu = chrono::high_resolution_clock::now();
+
+cout << "CPU Time: "
+     << chrono::duration_cast<chrono::microseconds>(end_cpu - start_cpu).count()
+     << " microseconds\n";
+✅ 3. Corrected Kernel Launch Section
+dim3 dimBlock(BLOCK_SIZE);
+dim3 dimGrid((size + BLOCK_SIZE - 1) / BLOCK_SIZE);
+
+add<<<dimGrid, dimBlock>>>(arr1_gpu, arr2_gpu, result_gpu, size);
+cudaDeviceSynchronize();
+⚠️ 4. If your program doesn’t run
+
+Run:
+
+nvidia-smi
+❌ If error → no GPU / drivers missing
+❌ If nvcc not found → CUDA toolkit not installed
+🚀 5. Viva-Ready Explanation (VERY IMPORTANT)
+
+If asked:
+
+👉 Why GPU is faster here?
+
+Answer:
+
+Each element addition is independent → perfect for parallelism
+GPU runs thousands of threads simultaneously
+CPU runs sequentially → slower for large data
+
+👉 What does this line do?
+
+blockIdx.x * blockDim.x + threadIdx.x
+
+Answer:
+
+Computes global thread ID
+Each thread handles one element of vector
+💡 Final Working Flow
+nvcc vector_add.cu -o vector_add
+./vector_add
