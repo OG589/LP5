@@ -1,185 +1,91 @@
 #include<iostream>
+#include<vector>
 #include<omp.h>
 #include<bits/stdc++.h>
-
 using namespace std;
 
+void bubble(vector<int>a,bool p){
+    double s=omp_get_wtime();
 
-    
+    for(int k=0;k<a.size();k++){
+        int st=k%2;
 
-
-
-void sequential_bubble_sort(int arr[],int size){
-    int array[size];
-    for(int i = 0 ; i < size; i++){
-        array[i] = arr[i];
-    }
-
-    double start = omp_get_wtime();
-    for(int i = 0; i < size - 1; i ++){
-        for(int j = 0; j < size - i - 1; j++){
-            if(array[j] > array[j+1]){
-                swap(array[j],array[j+1]);
-            }
-        }
-    }
-    double end = omp_get_wtime();
-    cout << "Sequential Bubble Sort:\n";
-    // for(int i = 0 ; i < size; i++){
-    //     cout << array[i] << " ";
-    // }
-    cout << endl;
-    cout << "Time Required: " << end - start << endl;
-
-}
-
-void parallel_bubble_sort(int arr[],int size){
-    int array[size];
-    for(int i = 0 ; i < size; i++){
-        array[i] = arr[i];
-    }
-    double start = omp_get_wtime();
-    for(int k = 0; k < size;k ++){
-        if(k % 2 == 0){
+        if(p){
             #pragma omp parallel for
-                for(int i = 1; i < size - 1; i += 2){
-                    if(array[i] > array[i+1]){
-                        swap(array[i],array[i+1]);
-                    }
-                }
+            for(int i=st;i<a.size()-1;i+=2)
+                if(a[i]>a[i+1]) swap(a[i],a[i+1]);
         }
         else{
-            #pragma omp parallel for
-                for(int i = 0; i < size - 1; i += 2){
-                    if(array[i] > array[i+1]){
-                        swap(array[i],array[i+1]);
-                    }
-                }
+            for(int i=st;i<a.size()-1;i+=2)
+                if(a[i]>a[i+1]) swap(a[i],a[i+1]);
         }
     }
-    double end = omp_get_wtime();
-    cout << "Parallel Bubble Sort:\n";
-    // for(int i = 0 ; i < size; i++){
-    //     cout << array[i] << " ";
-    // }
-    cout << endl;
-    cout << "Time Required: " << end - start << endl;
+
+    cout<<(p?"Parallel ":"Sequential ")<<"Bubble Sort Time: "
+        <<omp_get_wtime()-s<<endl;
 }
 
-void merge(int array[],int low, int mid, int high,int size){
-    int temp[size];
-    int i = low;
-    int j = mid + 1;
-    int k = 0;
-    while((i <= mid) && (j <= high)){
-        if(array[i] >= array[j]){
-            temp[k] = array[j];
-            k++;
-            j++;
-        }
-        else{
-            temp[k] = array[i];
-            k++;
-            i++;
-        }
-    }
-    while(i <= mid){
-        temp[k] = array[i];
-        k++;
-        i++;
-    }
-    while(j <= high){
-        temp[k] = array[j];
-        k++;
-        j++;
-    }
+void merge(vector<int>&a,int l,int m,int h){
+    vector<int>t;
+    int i=l,j=m+1;
 
-    k = 0;
-    for(int i = low;i <= high;i++){
-        array[i] = temp[k];
-        k++;
-    }
+    while(i<=m&&j<=h)
+        t.push_back(a[i]<a[j]?a[i++]:a[j++]);
+
+    while(i<=m) t.push_back(a[i++]);
+    while(j<=h) t.push_back(a[j++]);
+
+    for(int k=0;k<t.size();k++) a[l+k]=t[k];
 }
 
-void mergesort(int array[],int low,int high,int size){
-    if(low < high){
-        int mid = (low + high) / 2;
-        mergesort(array,low,mid,size);
-        mergesort(array,mid+1,high,size);
-        merge(array,low,mid,high,size);
-    }
-}
+void msort(vector<int>&a,int l,int h,bool p){
+    if(l>=h) return;
 
-void perform_merge_sort(int arr[],int size){
-    int array[size];
-    for(int i = 0 ; i < size; i++){
-        array[i] = arr[i];
-    }
-    double start = omp_get_wtime();
-    mergesort(array,0,size-1,size);
-    double end = omp_get_wtime();
-    cout << "Merge Sort:\n";
-    // for(int i = 0 ; i < size; i++){
-    //     cout << array[i] << " ";
-    // }
-    cout << endl;
-    cout << "Time Required: " << end - start << endl;
-}
+    int m=(l+h)/2;
 
-void p_mergesort(int array[],int low,int high,int size){
-    if(low < high){
-        int mid = (low + high) / 2;
+    if(p){
         #pragma omp parallel sections
         {
             #pragma omp section
-                p_mergesort(array,low,mid,size);
+            msort(a,l,m,p);
+
             #pragma omp section
-                p_mergesort(array,mid+1,high,size);
+            msort(a,m+1,h,p);
         }
-        merge(array,low,mid,high,size);
     }
+    else{
+        msort(a,l,m,p);
+        msort(a,m+1,h,p);
+    }
+
+    merge(a,l,m,h);
 }
 
-void perform_p_merge_sort(int arr[],int size){
-    int array[size];
-    for(int i = 0 ; i < size; i++){
-        array[i] = arr[i];
-    }
-    double start = omp_get_wtime();
-    p_mergesort(array,0,size-1,size);
-    double end = omp_get_wtime();
-    cout << "Parallel Merge Sort:\n";
-    // for(int i = 0 ; i < size; i++){
-    //     cout << array[i] << " ";
-    // }
-    cout << endl;
-    cout << "Time Required: " << end - start << endl;
+void runMerge(vector<int>a,bool p){
+    double s=omp_get_wtime();
+
+    msort(a,0,a.size()-1,p);
+
+    cout<<(p?"Parallel ":"Sequential ")
+        <<"Merge Sort Time: "
+        <<omp_get_wtime()-s<<endl;
 }
 
+int main(){
+    int n;
+    cout<<"Enter size: ";
+    cin>>n;
 
+    vector<int>a(n);
 
-int main(int argc, char const *argv[])
-{
-    int SIZE;
-    int MAX = 1000;
-    cout << "Enter size of array: ";
-    cin >> SIZE;
-    int array[SIZE];
-    for(int i = 0 ; i < SIZE; i ++){
-        array[i] = rand() % MAX;
-    }
-    // cout << "Initial Array:\n";
-    // for(int i = 0 ; i < SIZE; i++){
-    //     cout << array[i] << " ";
-    // }
-    cout << endl;
-    sequential_bubble_sort(array,SIZE);
-    parallel_bubble_sort(array,SIZE);
-    perform_merge_sort(array,SIZE);
-    perform_p_merge_sort(array,SIZE);
-    return 0;
+    cout<<"Enter elements:\n";
+    for(int&i:a) cin>>i;
+
+    bubble(a,0);
+    bubble(a,1);
+    runMerge(a,0);
+    runMerge(a,1);
 }
-
 
 
 
